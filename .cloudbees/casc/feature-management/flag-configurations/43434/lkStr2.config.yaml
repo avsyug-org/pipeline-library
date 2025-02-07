@@ -6,7 +6,7 @@ flag: lkStr2
 
 enabled: false
 
-stickinessProperty: userEmail
+stickinessProperty: GregDelete-playground
 
 defaultValue:
   valueWrittenInCode: true
