@@ -4,7 +4,7 @@ kind: flag-configuration
 
 flag: lkStr2
 
-enabled: false
+enabled: true
 
 stickinessProperty: GregDelete-playground
 
