@@ -6,7 +6,7 @@ flag: lkB
 
 enabled: false
 
-stickinessProperty: rox.distinct_id
+stickinessProperty: GregDelete-playground
 
 defaultValue:
   - percentage: 11
