@@ -6,7 +6,7 @@ flag: lkB
 
 enabled: false
 
-stickinessProperty: rox.distinct_id
+stickinessProperty: rox.platform
 
 defaultValue:
   - percentage: 11
