@@ -6,7 +6,7 @@ flag: lkStr2
 
 enabled: true
 
-stickinessProperty: GregDelete-playground
+stickinessProperty: rox.distinct_id
 
 defaultValue:
   valueWrittenInCode: true
