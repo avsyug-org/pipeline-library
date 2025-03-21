@@ -13,11 +13,6 @@ defaultValue: true
 conditions:
   - allOf:
       - property:
-          name: GregDelete
-          operator: is-true
-    flagValue: true
-  - allOf:
-      - property:
           name: CP_String
           operator: in-array
           operands:
