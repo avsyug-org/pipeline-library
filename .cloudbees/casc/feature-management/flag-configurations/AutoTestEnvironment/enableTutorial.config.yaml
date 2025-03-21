@@ -8,10 +8,11 @@ enabled: false
 
 stickinessProperty: rox.distinct_id
 
-defaultValue:
-  - percentage: 0
-    from: 2025-03-21T13:45:00Z
-  - percentage: 10
-    from: 2025-03-21T13:55:00Z
+defaultValue: false
 
-conditions: []
+conditions:
+  - allOf:
+      - property:
+          name: GregDelete
+          operator: is-true
+    flagValue: true
