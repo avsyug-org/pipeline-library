@@ -8,11 +8,6 @@ enabled: false
 
 stickinessProperty: rox.distinct_id
 
-defaultValue: Blue
+defaultValue: White
 
-conditions:
-  - allOf:
-      - anyOf:
-          - group:
-              name: parent
-    flagValue: Blue
+conditions: []
