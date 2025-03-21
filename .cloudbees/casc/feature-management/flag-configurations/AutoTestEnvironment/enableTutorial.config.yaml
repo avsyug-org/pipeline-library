@@ -12,7 +12,7 @@ defaultValue: false
 
 conditions:
   - allOf:
-      - property:
-          name: GregDelete
-          operator: is-undefined
+      - flag:
+          name: flag111
+          value: "true"
     flagValue: true
