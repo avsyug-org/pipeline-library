@@ -14,7 +14,7 @@ conditions:
   - allOf:
       - property:
           name: CP_String
-          operator: regex
+          operator: in-array
           operands:
-            - hello
+            - ' hello'
     flagValue: false
