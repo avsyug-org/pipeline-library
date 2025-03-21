@@ -13,6 +13,11 @@ defaultValue:
 
 conditions:
   - allOf:
+      - flag:
+          name: flag111
+          value: "true"
+    flagValue: Yellow
+  - allOf:
       - property:
           name: rox.now2
           operator: after
