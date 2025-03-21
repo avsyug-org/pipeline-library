@@ -14,5 +14,5 @@ conditions:
   - allOf:
       - property:
           name: GregDelete
-          operator: is-false
+          operator: is-undefined
     flagValue: true
