@@ -8,7 +8,13 @@ enabled: true
 
 stickinessProperty: rox.distinct_id
 
-defaultValue:
-  valueWrittenInCode: true
+defaultValue: true
 
-conditions: []
+conditions:
+  - allOf:
+      - property:
+          name: CP_String
+          operator: regex
+          operands:
+            - lmnop
+    flagValue: true
