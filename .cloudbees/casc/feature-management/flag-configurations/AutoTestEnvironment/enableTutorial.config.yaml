@@ -8,11 +8,6 @@ enabled: false
 
 stickinessProperty: rox.distinct_id
 
-defaultValue: false
+defaultValue: true
 
-conditions:
-  - allOf:
-      - flag:
-          name: flag111
-          value: "true"
-    flagValue: true
+conditions: []
