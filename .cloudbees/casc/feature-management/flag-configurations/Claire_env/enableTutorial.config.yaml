@@ -17,4 +17,4 @@ conditions:
           operator: regex
           operands:
             - lmnop
-    flagValue: true
+    flagValue: false
