@@ -1,0 +1,19 @@
+---
+apiVersion: featuremanagement.cloudbees.io/v1alpha1
+kind: flag-configuration
+
+flag: Greg-Audit-Test
+
+enabled: false
+
+stickinessProperty: rox.distinct_id
+
+defaultValue:
+  valueWrittenInCode: true
+
+conditions:
+  - allOf:
+      - flag:
+          name: enableTutorial
+          value: "false"
+    flagValue: false
