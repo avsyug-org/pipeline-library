@@ -22,3 +22,19 @@ jobs:
       mynumber: 1
       mybool: false
       mychoice: opt1
+  call_with_io2_super_long_name2:
+    needs: getready
+    uses: avsyug-org/pipeline-library/.cloudbees/workflows/rw-with-io-2.yaml
+    with:
+      mystring: hola
+      mynumber: 1
+      mybool: false
+      mychoice: opt1
+  call_with_io2_super_long_name3:
+    needs: [call_with_io2_super_long_name, call_with_io2_super_long_name2]
+    uses: avsyug-org/pipeline-library/.cloudbees/workflows/rw-with-io-2.yaml
+    with:
+      mystring: hola
+      mynumber: 1
+      mybool: false
+      mychoice: opt1
