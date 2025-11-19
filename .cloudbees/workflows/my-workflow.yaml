@@ -1,0 +1,24 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: My workflow
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+jobs:
+  getready:
+    steps:
+      - name: Print
+        uses: docker://golang:1.20.3-alpine3.17
+        shell: sh
+        run: |
+          echo "getting ready"
+  call_with_io2_super_long_name:
+    needs: getready
+    uses: avsyug-org/pipeline-library/.cloudbees/workflows/rw-with-io-2.yaml
+    with:
+      mystring: hola
+      mynumber: 1
+      mybool: false
+      mychoice: opt1
