@@ -11,7 +11,6 @@ on:
         value: ${{ jobs.build.outputs.output2 }}
         description: Output desc 2
     inputs:
-      #caca
       mystring:
         type: string
         required: false
@@ -28,6 +27,7 @@ on:
           - opt2
           - opt3
         required: false
+  workflow_dispatch:
 jobs:
   buildserv:
     services:
