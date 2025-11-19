@@ -28,6 +28,23 @@ on:
           - opt3
         required: false
   workflow_dispatch:
+    inputs:
+      mystring:
+        type: string
+        default: test
+      mynumber:
+        type: number
+        default: 1
+      mybool:
+        type: boolean
+        default: false
+      mychoice:
+        type: choice
+        options:
+          - opt1
+          - opt2
+          - opt3
+        default: opt1
 jobs:
   buildserv:
     services:
