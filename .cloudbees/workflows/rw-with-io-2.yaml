@@ -46,18 +46,18 @@ on:
           - opt3
         default: opt1
 jobs:
-  buildserv:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval
+  # buildserv:
+  #   services:
+  #     redis:
+  #       image: redis:7-alpine3.20
+  #   steps:
+  #     - uses: docker://redis:7-alpine3.20
+  #       name: Run Redis commands
+  #       run: |
+  #         redis-cli SET testkey "Hello Redis!"
+  #         redis-cli GET testkey
+  #   needs:
+  #     - noapproval
   build:
     outputs:
       output1: this is output1
@@ -77,51 +77,11 @@ jobs:
       approvers: 4b7f53fc-d4fe-11ec-bb55-42010a83ae55
       disallowLaunchByUser: false
       instructions: ""
-  noapproval:
-    environment: ""
-    steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  noapproval2:
-    environment: ""
-    steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  noapproval3:
-    environment: ""
-    steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  buildserv2:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval
-  buildserv3:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval2
+  # noapproval:
+  #   environment: ""
+  #   steps:
+  #     - name: sdafsdf
+  #       uses: docker://golang:1.20.3-alpine3.17
+  #       shell: sh
+  #       run: |
+  #         echo "hello there"
