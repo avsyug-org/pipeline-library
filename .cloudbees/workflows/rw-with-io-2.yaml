@@ -85,3 +85,43 @@ jobs:
         shell: sh
         run: |
           echo "hello there"
+  noapproval2:
+    environment: ""
+    steps:
+      - name: sdafsdf
+        uses: docker://golang:1.20.3-alpine3.17
+        shell: sh
+        run: |
+          echo "hello there"
+  noapproval3:
+    environment: ""
+    steps:
+      - name: sdafsdf
+        uses: docker://golang:1.20.3-alpine3.17
+        shell: sh
+        run: |
+          echo "hello there"
+  buildserv2:
+    services:
+      redis:
+        image: redis:7-alpine3.20
+    steps:
+      - uses: docker://redis:7-alpine3.20
+        name: Run Redis commands
+        run: |
+          redis-cli SET testkey "Hello Redis!"
+          redis-cli GET testkey
+    needs:
+      - noapproval
+  buildserv3:
+    services:
+      redis:
+        image: redis:7-alpine3.20
+    steps:
+      - uses: docker://redis:7-alpine3.20
+        name: Run Redis commands
+        run: |
+          redis-cli SET testkey "Hello Redis!"
+          redis-cli GET testkey
+    needs:
+      - noapproval2
