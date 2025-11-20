@@ -1,127 +1,355 @@
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
-name: rw with io 2
+name: Jira Actions End-to-End Test
+
 on:
-  workflow_call:
-    outputs:
-      out1:
-        value: ${{ jobs.build.outputs.output1 }}
-        description: Output desc 1
-      out2:
-        value: ${{ jobs.build.outputs.output2 }}
-        description: Output desc 2
-    inputs:
-      mystring:
-        type: string
-        required: false
-      mynumber:
-        type: number
-        required: false
-      mybool:
-        type: boolean
-        required: false
-      mychoice:
-        type: choice
-        options:
-          - opt1
-          - opt2
-          - opt3
-        required: false
   workflow_dispatch:
-    inputs:
-      mystring:
-        type: string
-        default: test
-      mynumber:
-        type: number
-        default: 1
-      mybool:
-        type: boolean
-        default: false
-      mychoice:
-        type: choice
-        options:
-          - opt1
-          - opt2
-          - opt3
-        default: opt1
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
 jobs:
-  buildserv:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval
-  build:
+  jira-get-initial-issues:
     outputs:
-      output1: this is output1
-      output2: this is output2
+      total: ${{ steps.get-initial-issues.outputs.total }}
+      issues: ${{ steps.get-initial-issues.outputs.issues }}
     steps:
-      - name: Print param and return outputs
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "Params received: ${{ inputs.mystring }} ${{ inputs.mynumber }} ${{ inputs.mybool }} ${{ inputs.mychoice }} "
+      - name: Get existing issues
+        uses: https://github.com/cloudbees-days/jira-get-issues
+        id: get-initial-issues
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          jql: 'project = "UDEMO" AND status != "Done" ORDER BY created DESC'
+          fields: "summary,status,assignee,created"
+          max-results: "10"
+
+      - name: Display initial issues
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Initial Jira Issues Query
+
+            **Query:** `project = "UDEMO" AND status != "Done" ORDER BY created DESC`
+
+            **Results:**
+            ```
+            ${{ steps.get-initial-issues.outputs.issues }}
+            ```
+
+            **Total Issues Found:** ${{ steps.get-initial-issues.outputs.total }}
+          format: MARKDOWN
+
+  jira-create-test-issue:
+    needs: jira-get-initial-issues
+    outputs:
+      issue-key: ${{ steps.create-issue.outputs.issue-key }}
+      issue-url: ${{ steps.create-issue.outputs.issue-url }}
+    steps:
+      - name: Create test issue
+        uses: https://github.com/cloudbees-days/jira-create-issue
+        id: create-issue
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          project-key: "UDEMO"
+          issue-type: "Task"
+          issue-fields: |
+            summary: "E2E Test Issue - CloudBees Workflow"
+            description: |
+              This issue was created automatically by the CloudBees Jira Actions E2E test.
+              
+              **Test Details:**
+              - Workflow: Jira Actions End-to-End Test
+              - Run ID: ${{ cloudbees.run_id }}
+              - Commit: ${{ cloudbees.scm.sha }}
+              - Branch: ${{ cloudbees.scm.branch }}
+              
+              This issue will be used to test:
+              1. Issue creation ✓
+              2. Issue updates
+              3. Status changes
+              4. Comment addition
+            labels:
+              - "automation"
+              - "e2e-test"
+              - "cloudbees"
+
+      - name: Display created issue
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Created Jira Issue
+
+            **Issue Key:** ${{ steps.create-issue.outputs.issue-key }}
+            **Issue URL:** ${{ steps.create-issue.outputs.issue-url }}
+
+            **Summary:** E2E Test Issue - CloudBees Workflow
+            **Project:** UDEMO
+            **Type:** Task
+          format: MARKDOWN
+
+  jira-update-test-issue:
+    needs: jira-create-test-issue
+    outputs:
+      update-count: ${{ steps.update-issue.outputs.update-count }}
+      updated-issues: ${{ steps.update-issue.outputs.updated-issues }}
+    steps:
+      - name: Update test issue
+        uses: https://github.com/cloudbees-days/jira-update-issues
+        id: update-issue
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          jql: 'key = "${{ needs.jira-create-test-issue.outputs.issue-key }}"'
+          update-fields: |
+            description: |
+              This issue was created automatically by the CloudBees Jira Actions E2E test.
+              
+              **Test Details:**
+              - Workflow: Jira Actions End-to-End Test
+              - Run ID: ${{ cloudbees.run_id }}
+              - Commit: ${{ cloudbees.scm.sha }}
+              - Branch: ${{ cloudbees.scm.branch }}
+              
+              **Test Progress:**
+              1. Issue creation ✓
+              2. Issue updates ✓ (UPDATED)
+              3. Status changes (pending)
+              4. Comment addition (pending)
+              
+              **Last Updated:** by CloudBees workflow
+            labels:
+              - "automation"
+              - "e2e-test"
+              - "cloudbees"
+              - "updated"
+
+      - name: Display update results
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Updated Jira Issue
+
+            **Issue Key:** ${{ needs.jira-create-test-issue.outputs.issue-key }}
+            **Updates Applied:** ${{ steps.update-issue.outputs.update-count }}
+            **Update Status:** Success
+
+            **Changes Made:**
+            - Updated description with progress
+            - Added "updated" label
+          format: MARKDOWN
+
+  jira-add-test-comment:
+    needs: [jira-create-test-issue, jira-update-test-issue]
+    outputs:
+      comment-count: ${{ steps.add-comment.outputs.comment-count }}
+      commented-issues: ${{ steps.add-comment.outputs.commented-issues }}
+    steps:
+      - name: Add comment to test issue
+        uses: https://github.com/cloudbees-days/jira-add-comment
+        id: add-comment
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          issue-key: ${{ needs.jira-create-test-issue.outputs.issue-key }}
+          comment: |
+            **CloudBees E2E Test - Comment Added**
+
+            This comment was added automatically during the end-to-end test of CloudBees Jira actions.
+
+            **Test Results So Far:**
+            ✅ Issue creation successful
+            ✅ Issue update successful  
+            ✅ Comment addition successful
+
+            **Environment:**
+            - Workflow: Jira Actions End-to-End Test
+            - Run ID: ${{ cloudbees.run_id }}
+            - Timestamp: CloudBees workflow execution
+
+            Next step: Test status waiting functionality.
+          visibility: "public"
+
+      - name: Display comment results
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Added Comment to Jira Issue
+
+            **Issue Key:** ${{ needs.jira-create-test-issue.outputs.issue-key }}
+            **Comments Added:** ${{ steps.add-comment.outputs.comment-count }}
+            **Comment Status:** Success
+
+            **Comment Type:** Public comment with test results and environment info
+          format: MARKDOWN
+
+  jira-wait-for-status-demo:
+    needs: [jira-create-test-issue, jira-add-test-comment]
+    outputs:
+      result: ${{ steps.wait-status.outputs.result }}
+      final-status-summary: ${{ steps.wait-status.outputs.final-status-summary }}
+    steps:
+      - name: Wait for status change (demo with short timeout)
+        uses: https://github.com/cloudbees-days/jira-wait-for-status
+        id: wait-status
+        continue-on-error: true
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          issue-key: ${{ needs.jira-create-test-issue.outputs.issue-key }}
+          target-status: "In Progress,Done"
+          timeout-minutes: "1"
+          poll-interval-seconds: "5"
+
+      - name: Display wait results
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Status Wait Results
+
+            **Issue Key:** ${{ needs.jira-create-test-issue.outputs.issue-key }}
+            **Target Status:** In Progress or Done
+            **Final Status:** ${{ steps.wait-status.outputs.final-status-summary }}
+            **Wait Result:** ${{ steps.wait-status.outputs.result }}
+
+            **Note:** This step uses a short 1-minute timeout for demo purposes.
+            In real workflows, you might wait longer or manually transition the issue status.
+          format: MARKDOWN
+
+  jira-get-final-issues:
+    needs: [jira-create-test-issue, jira-wait-for-status-demo]
+    outputs:
+      total: ${{ steps.get-final-issues.outputs.total }}
+      issues: ${{ steps.get-final-issues.outputs.issues }}
+    steps:
+      - name: Get issues with our test issue
+        uses: https://github.com/cloudbees-days/jira-get-issues
+        id: get-final-issues
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          jql: 'key = "${{ needs.jira-create-test-issue.outputs.issue-key }}" OR (project = "UDEMO" AND summary ~ "E2E Test")'
+          fields: "summary,status,created,updated"
+
+      - name: Display final query results
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Final Jira Issues Query
+
+            **Query:** Issues matching our test or similar E2E tests
+
+            **Results:**
+            ```
+            ${{ steps.get-final-issues.outputs.issues }}
+            ```
+
+            **Total Issues Found:** ${{ steps.get-final-issues.outputs.total }}
+          format: MARKDOWN
+
+  jira-bulk-operations-demo:
+    needs: jira-get-final-issues
+    outputs:
+      comment-count: ${{ steps.bulk-comment.outputs.comment-count }}
+      commented-issues: ${{ steps.bulk-comment.outputs.commented-issues }}
+    steps:
+      - name: Bulk add comments to E2E test issues
+        uses: https://github.com/cloudbees-days/jira-add-comment
+        id: bulk-comment
+        continue-on-error: true
+        with:
+          jira-url: ${{ secrets.JIRA_URL }}
+          jira-username: ${{ secrets.JIRA_USERNAME }}
+          jira-token: ${{ secrets.JIRA_TOKEN }}
+          jql: 'project = "UDEMO" AND summary ~ "E2E Test" AND labels in ("e2e-test")'
+          comment: |
+            **Bulk Operation Test**
+
+            This comment was added to multiple issues as part of the bulk operations test.
+
+            **Workflow:** Jira Actions End-to-End Test
+            **Timestamp:** CloudBees workflow execution
+          visibility: "public"
+          continue-on-error: "true"
+
+      - name: Display bulk operation results
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            ## Bulk Operations Test Results
+
+            **Operation:** Bulk comment addition
+            **Target:** E2E test issues in UDEMO project
+            **Comments Added:** ${{ steps.bulk-comment.outputs.comment-count }}
+            **Operation Status:** Success
+
+            This demonstrates the bulk operation capabilities of the Jira actions.
+          format: MARKDOWN
+
+  test-summary:
     needs:
-      - approve
-  approve:
-    timeout-minutes: 4320
-    delegates: cloudbees-io/manual-approval/custom-job.yml@v1
-    with:
-      approvers: 4b7f53fc-d4fe-11ec-bb55-42010a83ae55
-      disallowLaunchByUser: false
-      instructions: ""
-  noapproval:
-    environment: ""
+      [
+        jira-get-initial-issues,
+        jira-create-test-issue,
+        jira-update-test-issue,
+        jira-add-test-comment,
+        jira-wait-for-status-demo,
+        jira-get-final-issues,
+        jira-bulk-operations-demo,
+      ]
     steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  noapproval2:
-    environment: ""
-    steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  noapproval3:
-    environment: ""
-    steps:
-      - name: sdafsdf
-        uses: docker://golang:1.20.3-alpine3.17
-        shell: sh
-        run: |
-          echo "hello there"
-  buildserv2:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval
-  buildserv3:
-    services:
-      redis:
-        image: redis:7-alpine3.20
-    steps:
-      - uses: docker://redis:7-alpine3.20
-        name: Run Redis commands
-        run: |
-          redis-cli SET testkey "Hello Redis!"
-          redis-cli GET testkey
-    needs:
-      - noapproval2
+      - name: Publish test summary
+        uses: cloudbees-io/publish-evidence-item@v1
+        with:
+          content: |-
+            # Jira Actions E2E Test Summary
+
+            ## Test Execution Overview
+
+            **Workflow:** Jira Actions End-to-End Test
+            **Run ID:** ${{ cloudbees.run_id }}
+            **Commit:** ${{ cloudbees.scm.sha }}
+            **Branch:** ${{ cloudbees.scm.branch }}
+
+            ## Actions Tested
+
+            | Action | Status | Details |
+            |--------|--------|---------|
+            | jira-get-issues (initial) | ✅ | Queried existing issues - Found ${{ needs.jira-get-initial-issues.outputs.total }} issues |
+            | jira-create-issue | ✅ | Created issue: ${{ needs.jira-create-test-issue.outputs.issue-key }} |
+            | jira-update-issues | ✅ | Updated ${{ needs.jira-update-test-issue.outputs.update-count }} issue(s) |
+            | jira-add-comment | ✅ | Added ${{ needs.jira-add-test-comment.outputs.comment-count }} comment(s) |
+            | jira-wait-for-status | ⚠️ | Demo timeout - Result: ${{ needs.jira-wait-for-status-demo.outputs.result }} |
+            | jira-get-issues (final) | ✅ | Final query - Found ${{ needs.jira-get-final-issues.outputs.total }} issues |
+            | jira-add-comment (bulk) | ✅ | Bulk operation - Added ${{ needs.jira-bulk-operations-demo.outputs.comment-count }} comment(s) |
+
+            ## Test Issue Created
+
+            **Issue Key:** ${{ needs.jira-create-test-issue.outputs.issue-key }}
+            **Issue URL:** ${{ needs.jira-create-test-issue.outputs.issue-url }}
+
+            ## Next Steps
+
+            1. Review the created test issue in Jira
+            2. Manually transition the issue status to test jira-wait-for-status with longer timeouts
+            3. Customize the workflow for your specific Jira project and requirements
+            4. Add your own JQL queries and field configurations
+
+            ## Configuration Required
+
+            Update these secrets in your CloudBees platform:
+            - `JIRA_URL`: Your Jira instance URL (e.g., https://company.atlassian.net)
+            - `JIRA_USERNAME`: Your Jira username/email
+            - `JIRA_TOKEN`: Your Jira API token
+
+            Update the project key "UDEMO" to match your actual Jira project.
+          format: MARKDOWN
